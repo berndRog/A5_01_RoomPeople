@@ -2,7 +2,7 @@ package de.rogallab.mobile.data.seed
 
 import de.rogallab.mobile.domain.IPeopleRepository
 import de.rogallab.mobile.domain.entities.Person
-import de.rogallab.mobile.domain.mapping.toModel
+import de.rogallab.mobile.domain.mapping.toPersonDto
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
@@ -26,9 +26,11 @@ class Seed @Inject constructor(
       val coroutineScope = CoroutineScope(Job() + _dispatcher + _exceptionHandler)
 
       val job = coroutineScope.launch {
-         coroutineScope.async {
-            _repository.addAll(people.toModel())
-         }.await()
+         if(_repository.count() == 0) {
+            coroutineScope.async {
+               _repository.addAll(people.toPersonDto())
+            }.await()
+         }
       }
       coroutineScope.launch {
          job.join()

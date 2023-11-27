@@ -51,7 +51,7 @@ object ProvideModules {
    ): CoroutineExceptionHandler {
       logInfo(tag, "providesCoroutineExceptionHandler()")
       return CoroutineExceptionHandler { _, exception ->
-         val message = exception.localizedMessage?.let {
+         exception.localizedMessage?.let {
             logError("ok>CoroutineException", it)
          } ?: run {
             exception.stackTrace.forEach {
@@ -81,7 +81,7 @@ object ProvideModules {
 
    @Provides
    @Singleton
-   fun providePeopleDtoDao(
+   fun providePeopleDao(
       database: AppDatabase
    ): IPeopleDao {
       logInfo(tag, "providesIPeopleDao()")

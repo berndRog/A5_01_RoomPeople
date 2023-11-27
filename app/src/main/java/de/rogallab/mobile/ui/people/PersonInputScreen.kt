@@ -32,8 +32,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import de.rogallab.mobile.R
 import de.rogallab.mobile.domain.UiState
+import de.rogallab.mobile.domain.entities.Person
 import de.rogallab.mobile.domain.utilities.logInfo
+import de.rogallab.mobile.ui.people.composables.HandleUiStateError
 import de.rogallab.mobile.ui.people.composables.InputNameMailPhone
+import de.rogallab.mobile.ui.people.composables.LogUiStates
 import de.rogallab.mobile.ui.people.composables.isInputValid
 import kotlinx.coroutines.launch
 import showErrorMessage
@@ -58,18 +61,11 @@ fun PersonInputScreen(
       }
    )
 
+   val uiStateFlow: UiState<Person> by viewModel.uiStateFlow.collectAsStateWithLifecycle()
+   LogUiStates(uiStateFlow,"UiStateFlow", tag )
+
    val context = LocalContext.current
    val snackbarHostState = remember { SnackbarHostState() }
-   val uiStateFlow by viewModel.uiStateFlow.collectAsStateWithLifecycle()
-
-   if(uiStateFlow is UiState.Empty)
-      Log.v(tag,"Composition UiState.Empty ${uiStateFlow.upHandler} ${uiStateFlow.backHandler}")
-   else if(uiStateFlow is UiState.Loading)
-      Log.v(tag,"Composition UiState.Loading ${uiStateFlow.upHandler} ${uiStateFlow.backHandler}")
-   else if(uiStateFlow is UiState.Success)
-      Log.v(tag,"Composition UiState.Success ${uiStateFlow.upHandler} ${uiStateFlow.backHandler}")
-   else if(uiStateFlow is UiState.Error)
-      Log.v(tag,"Composition UiState.Error ${uiStateFlow.upHandler} ${uiStateFlow.backHandler}")
 
    Scaffold(
       topBar = {
@@ -133,29 +129,14 @@ fun PersonInputScreen(
    }
 
    if (uiStateFlow is UiState.Error) {
-      val backHandler = uiStateFlow.backHandler
-      val message = (uiStateFlow as UiState.Error).message
-      val coroutineScope = rememberCoroutineScope()
-      LaunchedEffect(uiStateFlow as UiState.Error) {
-         val job = coroutineScope.launch() {
-            showErrorMessage(
-               snackbarHostState = snackbarHostState,
-               errorMessage = message,
-               actionLabel = "Ok",
-               onErrorAction = { }
-            )
-         }
-         coroutineScope.launch {
-            job.join()
-            if(backHandler) {
-              logInfo(tag, "Back Navigation (Abort)")
-              navController.popBackStack(
-                 route = NavScreen.PeopleList.route,
-                 inclusive = false
-              )
-            }
-            viewModel.onUiStateFlowChange(UiState.Empty)
-         }
-      }
+      HandleUiStateError<Person>(
+         uiStateFlow = uiStateFlow,
+         actionLabel = "Ok",
+         onErrorAction = { },
+         navController = navController,
+         snackbarHostState = snackbarHostState,
+         onUiStateFlowChange = { viewModel.onUiStateFlowChange(it) },
+         tag = tag
+      )
    }
 }

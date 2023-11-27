@@ -4,7 +4,7 @@ import de.rogallab.mobile.data.models.PersonDto
 import de.rogallab.mobile.domain.IPeopleRepository
 import de.rogallab.mobile.domain.UiState
 import de.rogallab.mobile.domain.entities.Person
-import de.rogallab.mobile.domain.mapping.toDomain
+import de.rogallab.mobile.domain.mapping.toPerson
 import de.rogallab.mobile.domain.utilities.logDebug
 import de.rogallab.mobile.domain.utilities.logError
 import kotlinx.coroutines.CoroutineDispatcher
@@ -32,14 +32,11 @@ class ReadAll @Inject constructor(
 //       val filteredPeople = peopleDto.filter { peopleDto ->
 //          peopleDto.lastName.toUpper)=.startsWith("A")
 //       }
-         val people = peopleDto.toDomain().sortedBy { it.lastName }
+         val people = peopleDto.toPerson().sortedBy { it.lastName }
          emit(UiState.Success(data = people))
       }
    }.catch {
-      var message = ""
-      it.localizedMessage.let { text ->
-         message = text
-      }
+      var message = it.localizedMessage ?: it.stackTraceToString()
       logError(tag, message)
       emit(UiState.Error(message = message))
    }.flowOn(_exceptionHandler + _dispatcher)

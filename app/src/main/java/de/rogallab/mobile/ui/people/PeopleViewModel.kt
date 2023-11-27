@@ -11,8 +11,8 @@ import de.rogallab.mobile.domain.IPeopleRepository
 import de.rogallab.mobile.domain.IPeopleUseCases
 import de.rogallab.mobile.domain.UiState
 import de.rogallab.mobile.domain.entities.Person
-import de.rogallab.mobile.domain.mapping.toDomain
-import de.rogallab.mobile.domain.mapping.toModel
+import de.rogallab.mobile.domain.mapping.toPerson
+import de.rogallab.mobile.domain.mapping.toPersonDto
 import de.rogallab.mobile.domain.utilities.UUIDEmpty
 import de.rogallab.mobile.domain.utilities.logDebug
 import de.rogallab.mobile.domain.utilities.logError
@@ -86,7 +86,7 @@ class PeopleViewModel @Inject constructor(
 
    // Coroutine ExceptionHandler
    private val _exceptionHandler = CoroutineExceptionHandler { _, exception ->
-      val message =  exception.localizedMessage?.let {
+      exception.localizedMessage?.let {
          logError(tag, it)
          _uiStateFlow.value = UiState.Error(it, true)
       } ?: run {
@@ -113,12 +113,7 @@ class PeopleViewModel @Inject constructor(
 
    init {
       _coroutineScope.launch() {
-         val count = _coroutineScope.async {
-            return@async _repository.count()
-         }.await()
-         if(count == 0) {
-            _seed.initDatabase()
-         }
+         _seed.initDatabase()
       }
    }
 
@@ -151,7 +146,7 @@ class PeopleViewModel @Inject constructor(
                return@async _repository.findById(id)
             }.await()
             personDto?.let{
-               val person = it.toDomain()
+               val person = it.toPerson()
                // person values are set as observable states in the viewmodel
                setStateFromPerson(person)
                logDebug(tag, "findById() ${person.asString()}")
@@ -162,7 +157,7 @@ class PeopleViewModel @Inject constructor(
          }
       }
       catch (e: Exception) {
-         val message = e.localizedMessage
+         val message = e.localizedMessage ?: e.stackTraceToString()
          logError(tag,message)
          _uiStateFlow.value =  UiState.Error(message)
       }
@@ -182,7 +177,7 @@ class PeopleViewModel @Inject constructor(
 
    fun add() {
       try {
-         val personDto = getPersonFromState().toModel()
+         val personDto = getPersonFromState().toPersonDto()
          _coroutineScope.launch {
             val result = _coroutineScope.async {
                _repository.add(personDto)
@@ -198,7 +193,7 @@ class PeopleViewModel @Inject constructor(
             }
          }
       } catch (e: Exception) {
-         val message = e.localizedMessage
+         val message = e.localizedMessage ?: e.stackTraceToString()
          logError(tag, message)
          _uiStateFlow.value = UiState.Error(message, false, true)
       }
@@ -206,7 +201,7 @@ class PeopleViewModel @Inject constructor(
 
    fun update(id:UUID) {
       try {
-         val upPersonDto = getPersonFromState(id).toModel()
+         val upPersonDto = getPersonFromState(id).toPersonDto()
          _coroutineScope.launch {
             val result = _coroutineScope.async {
                _repository.update(upPersonDto)
@@ -221,7 +216,7 @@ class PeopleViewModel @Inject constructor(
             }
          }
       } catch (e: Exception) {
-         val message = e.localizedMessage
+         val message = e.localizedMessage ?: e.stackTraceToString()
          logError(tag,message)
          _uiStateFlow.value =  UiState.Error(message, false, true)
       }
@@ -250,7 +245,7 @@ class PeopleViewModel @Inject constructor(
             }
          }
       } catch (e: Exception) {
-         val message = e.localizedMessage
+         val message = e.localizedMessage ?: e.stackTraceToString()
          logError(tag,message)
          _uiStateFlow.value =  UiState.Error(message, false, true)
       }

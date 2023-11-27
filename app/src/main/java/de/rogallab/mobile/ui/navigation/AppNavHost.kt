@@ -5,6 +5,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -12,12 +13,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import de.rogallab.mobile.ui.people.PeopleListScreen
+import de.rogallab.mobile.ui.people.PeopleSwipeListScreen
 import de.rogallab.mobile.ui.people.PeopleViewModel
 import de.rogallab.mobile.ui.people.PersonDetailScreen
 import de.rogallab.mobile.ui.people.PersonInputScreen
-import androidx.hilt.navigation.compose.hiltViewModel
-import de.rogallab.mobile.ui.people.PeopleSwipeListScreen
 import java.util.UUID
 
 @Composable
