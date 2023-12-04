@@ -147,8 +147,9 @@ fun PersonDetailScreen(
          uiStateFlow = uiStateFlow,
          actionLabel = "Ok",
          onErrorAction = { },
-         navController = navController,
          snackbarHostState = snackbarHostState,
+         navController = navController,
+         routePopBack = NavScreen.PeopleList.route,
          onUiStateFlowChange = { viewModel.onUiStateFlowChange(it) },
          tag = tag
       )

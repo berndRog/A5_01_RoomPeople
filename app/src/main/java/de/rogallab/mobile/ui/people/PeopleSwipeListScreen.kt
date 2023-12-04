@@ -33,7 +33,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDismissState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -47,12 +46,10 @@ import de.rogallab.mobile.R
 import de.rogallab.mobile.domain.UiState
 import de.rogallab.mobile.domain.entities.Person
 import de.rogallab.mobile.domain.utilities.logDebug
-import de.rogallab.mobile.domain.utilities.logError
 import de.rogallab.mobile.ui.people.composables.HandleUiStateError
 import de.rogallab.mobile.ui.people.composables.LogUiStates
-import de.rogallab.mobile.ui.people.composables.SetBackground
+import de.rogallab.mobile.ui.people.composables.SetSwipeBackground
 import de.rogallab.mobile.ui.people.composables.SetCardElevation
-import showErrorMessage
 
 @OptIn(ExperimentalMaterial3Api::class)
 
@@ -143,20 +140,18 @@ fun PeopleSwipeListScreen(
                .padding(horizontal = 8.dp),
             state = rememberLazyListState()
          ) {
-            items(
-               items = list
-            ) { person ->
+            items(items = list) { person ->
 
-               var personRemoved: Person?
+           //  var personRemoved: Person?
                val dismissState = rememberDismissState(
                   confirmValueChange = {
                      if (it == DismissValue.DismissedToEnd) {
-                        logDebug("==>SwipeToDismiss().", "-> Edit")
+                        logDebug("ok>SwipeToDismiss()", "-> Detail")
                         navController.navigate(NavScreen.PersonDetail.route + "/${person.id}")
                         return@rememberDismissState true
                      } else if (it == DismissValue.DismissedToStart) {
-                        logDebug("==>SwipeToDismiss().", "-> Delete")
-                        personRemoved = person
+                        logDebug("ok>SwipeToDismiss()", "-> Delete")
+               //       personRemoved = person
                         viewModel.remove(person.id)
                         navController.navigate(NavScreen.PeopleList.route)
                         return@rememberDismissState true
@@ -170,7 +165,7 @@ fun PeopleSwipeListScreen(
                   modifier = Modifier.padding(vertical = 4.dp),
                   directions = setOf(DismissDirection.StartToEnd, DismissDirection.EndToStart),
                   background = {
-                     SetBackground(dismissState)
+                     SetSwipeBackground(dismissState)
                   },
                   dismissContent = {
                      Column {
@@ -187,29 +182,32 @@ fun PeopleSwipeListScreen(
                )
             }
          }
+         if (uiStateListFlow is UiState.Error) {
+            HandleUiStateError<List<Person>>(
+               uiStateFlow = uiStateListFlow,
+               actionLabel = "Ok",
+               onErrorAction = { },
+               snackbarHostState = snackbarHostState,
+               navController = navController,
+               routePopBack = NavScreen.PeopleList.route,
+               onUiStateFlowChange = { },
+               tag = tag
+            )
+         }
+         if (uiStateFlow is UiState.Error) {
+            HandleUiStateError(
+               uiStateFlow = uiStateFlow,
+               actionLabel = "Ok",
+               onErrorAction = { },
+               snackbarHostState = snackbarHostState,
+               navController = navController,
+               routePopBack = NavScreen.PeopleList.route,
+               onUiStateFlowChange = { viewModel.onUiStateFlowChange(it) },
+               tag = tag
+            )
+         }
       }
-   }
-   if (uiStateListFlow is UiState.Error) {
-      HandleUiStateError<List<Person>>(
-         uiStateFlow = uiStateListFlow,
-         actionLabel = "Ok",
-         onErrorAction = { },
-         navController = navController,
-         snackbarHostState = snackbarHostState,
-         onUiStateFlowChange = { },
-         tag = tag
-      )
-   }
-   if (uiStateFlow is UiState.Error) {
-      HandleUiStateError(
-         uiStateFlow = uiStateFlow,
-         actionLabel = "Ok",
-         onErrorAction = { },
-         navController = navController,
-         snackbarHostState = snackbarHostState,
-         onUiStateFlowChange = { viewModel.onUiStateFlowChange(it) },
-         tag = tag
-      )
+
    }
 }
 

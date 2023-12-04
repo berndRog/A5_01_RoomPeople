@@ -16,8 +16,9 @@ fun <T> HandleUiStateError(
    uiStateFlow: UiState<T>,                        // State ↓
    actionLabel: String?,                           // State ↓
    onErrorAction: () -> Unit,                      // Event ↑
-   navController: NavController,                   // State ↓
    snackbarHostState: SnackbarHostState,           // State ↓
+   navController: NavController,                   // State ↓
+   routePopBack: String,
    onUiStateFlowChange: (UiState<out T>) -> Unit,  // Event ↑
    tag: String,                                    // State ↓
 ) {
@@ -39,7 +40,7 @@ fun <T> HandleUiStateError(
          if (backHandler) {
             logInfo(tag, "Back Navigation (Abort)")
             navController.popBackStack(
-               route = NavScreen.PeopleList.route,
+               route = routePopBack,
                inclusive = false
             )
          }

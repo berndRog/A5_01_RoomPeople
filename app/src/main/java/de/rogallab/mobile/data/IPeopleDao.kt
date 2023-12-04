@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.Flow
 import java.util.*
 
 @Dao
-interface IPeopleDao {
+interface queryIPeopleDao {
    // QUERIES ---------------------------------------------
    @Query("SELECT * FROM people")
    fun selectAll(): Flow<List<PersonDto>>               // Observable Read

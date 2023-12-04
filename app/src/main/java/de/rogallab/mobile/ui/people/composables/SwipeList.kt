@@ -25,7 +25,7 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 @OptIn(ExperimentalMaterial3Api::class)
-fun SetBackground(dismissState: DismissState) {
+fun SetSwipeBackground(dismissState: DismissState) {
    val direction = dismissState.dismissDirection ?: return
 
    val colorBox by animateColorAsState(

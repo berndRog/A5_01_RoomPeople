@@ -1,7 +1,6 @@
 package de.rogallab.mobile.ui.people
 
 import NavScreen
-import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,10 +19,8 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -38,8 +35,6 @@ import de.rogallab.mobile.ui.people.composables.HandleUiStateError
 import de.rogallab.mobile.ui.people.composables.InputNameMailPhone
 import de.rogallab.mobile.ui.people.composables.LogUiStates
 import de.rogallab.mobile.ui.people.composables.isInputValid
-import kotlinx.coroutines.launch
-import showErrorMessage
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -133,8 +128,9 @@ fun PersonInputScreen(
          uiStateFlow = uiStateFlow,
          actionLabel = "Ok",
          onErrorAction = { },
-         navController = navController,
          snackbarHostState = snackbarHostState,
+         navController = navController,
+         routePopBack = NavScreen.PeopleList.route,
          onUiStateFlowChange = { viewModel.onUiStateFlowChange(it) },
          tag = tag
       )
