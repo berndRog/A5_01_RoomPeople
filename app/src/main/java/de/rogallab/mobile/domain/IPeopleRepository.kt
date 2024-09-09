@@ -1,15 +1,14 @@
 package de.rogallab.mobile.domain
 
-import de.rogallab.mobile.data.models.PersonDto
+import de.rogallab.mobile.domain.entities.Person
 import kotlinx.coroutines.flow.Flow
-import java.util.UUID
 
 interface IPeopleRepository {
-   fun selectAll(): Flow<List<PersonDto>>
-   suspend fun findById(id: UUID): PersonDto?
+   fun getAll(): Flow<ResultData<List<Person>>>
+   suspend fun findById(id: String): ResultData<Person?>
    suspend fun count(): Int
-   suspend fun add(personDto: PersonDto): Boolean
-   suspend fun addAll(peopleDtos: List<PersonDto>): Boolean
-   suspend fun update(personDto: PersonDto): Boolean
-   suspend fun remove(personDto: PersonDto): Boolean
+   suspend fun create(person: Person): ResultData<Unit>
+   suspend fun createAll(people: List<Person>): ResultData<Unit>
+   suspend fun update(person: Person): ResultData<Unit>
+   suspend fun remove(person: Person): ResultData<Unit>
 }

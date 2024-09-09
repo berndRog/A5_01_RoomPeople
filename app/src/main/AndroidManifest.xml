@@ -10,12 +10,12 @@
     android:icon="@mipmap/ic_launcher"
     android:roundIcon="@mipmap/ic_launcher_round"
     android:supportsRtl="true"
-    android:theme="@style/Theme.A5_01_RoomPeople"
+    android:theme="@style/Theme.A7_01_RoomPeople"
     tools:targetApi="34">
     <activity
       android:name="de.rogallab.mobile.ui.MainActivity"
       android:exported="true"
-      android:theme="@style/Theme.A5_01_RoomPeople">
+      android:theme="@style/Theme.A7_01_RoomPeople">
       <intent-filter>
         <action android:name="android.intent.action.MAIN" />
 

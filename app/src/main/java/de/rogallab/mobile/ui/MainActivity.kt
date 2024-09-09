@@ -2,33 +2,19 @@ package de.rogallab.mobile.ui
 
 import android.os.Bundle
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.material3.Surface
-import androidx.compose.ui.Modifier
-import androidx.core.view.WindowCompat
-import dagger.hilt.android.AndroidEntryPoint
+import de.rogallab.mobile.ui.base.BaseActivity
 import de.rogallab.mobile.ui.navigation.AppNavHost
-import de.rogallab.mobile.ui.people.PeopleViewModel
 import de.rogallab.mobile.ui.theme.AppTheme
-import javax.inject.Inject
 
-@AndroidEntryPoint
-class MainActivity : BaseActivity(tag) {
+class MainActivity : BaseActivity(TAG) {
 
    override fun onCreate(savedInstanceState: Bundle?) {
       super.onCreate(savedInstanceState)
 
-      // use insets to show to snackbar above ime keyboard
-      WindowCompat.setDecorFitsSystemWindows(window, false)
-
       setContent {
-
          AppTheme {
-            Surface(modifier = Modifier
-               .fillMaxSize()
-               .safeDrawingPadding())
-            {
+            Surface{
                AppNavHost()
             }
          }
@@ -36,8 +22,7 @@ class MainActivity : BaseActivity(tag) {
    }
 
    companion object {
-      //                       12345678901234567890123
-      private const val tag = "ok>MainActivity       ."
+      private const val TAG = "[MainActivity]"
    }
 }
 

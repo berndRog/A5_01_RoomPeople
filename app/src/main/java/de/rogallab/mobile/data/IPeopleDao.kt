@@ -1,17 +1,16 @@
 package de.rogallab.mobile.data
 
 import androidx.room.*
-import de.rogallab.mobile.data.models.PersonDto
+import de.rogallab.mobile.data.dto.PersonDto
 import kotlinx.coroutines.flow.Flow
-import java.util.*
 
 @Dao
-interface queryIPeopleDao {
+interface IPeopleDao {
    // QUERIES ---------------------------------------------
    @Query("SELECT * FROM people")
    fun selectAll(): Flow<List<PersonDto>>               // Observable Read
    @Query("SELECT * FROM people WHERE id = :id")     // One-Shot Read
-   suspend fun selectById(id: UUID): PersonDto?
+   suspend fun selectById(id: String): PersonDto?
    @Query("SELECT COUNT(*) FROM people")
    suspend fun count(): Int                             // One-shot read
 

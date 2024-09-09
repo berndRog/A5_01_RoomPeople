@@ -1,6 +1,7 @@
 package de.rogallab.mobile.utilsTest
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestDispatcher
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
@@ -9,7 +10,8 @@ import org.junit.rules.TestWatcher
 import org.junit.runner.Description
 
 // JUnit rule
-class MainDispatcherRule(
+@OptIn(ExperimentalCoroutinesApi::class)
+class MainDispatcherRule constructor(
    val testDispatcher: TestDispatcher = UnconfinedTestDispatcher()
 ) : TestWatcher() {
    override fun starting(description: Description) {

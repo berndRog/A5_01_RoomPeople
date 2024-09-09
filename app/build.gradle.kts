@@ -1,10 +1,30 @@
+/**
+ * Module-level functions
+ * These functions are used to provide dependencies for the app.
+ *
+ * The first section in the build configuration applies the Android Gradle plugin
+ * to this build and makes the android block available to specify
+ * Android-specific build options.
+ */
 plugins {
-   id("com.android.application")
-   id("org.jetbrains.kotlin.android")
-   id("dagger.hilt.android.plugin")
-   // kotlin("kapt")
-   id("com.google.devtools.ksp")
+   alias(libs.plugins.android.application)
+   alias(libs.plugins.jetbrains.kotlin.android)
+   alias(libs.plugins.google.devtools.ksp)
+   alias(libs.plugins.kotlin.serialization)
 }
+
+/**
+ * Locate (and possibly download) a JDK used to build your kotlin
+ * source code. This also acts as a default for sourceCompatibility,
+ * targetCompatibility and jvmTarget. Note that this does not affect which JDK
+ * is used to run the Gradle build itself, and does not need to take into
+ * account the JDK version required by Gradle plugins (such as the
+ * Android Gradle Plugin)
+ */
+kotlin {
+   jvmToolchain(17)
+}
+
 android {
    namespace = "de.rogallab.mobile"
    compileSdk = 34
@@ -48,133 +68,125 @@ android {
    kotlinOptions {
       jvmTarget = "17"
    }
-   kotlin {
-      jvmToolchain(17)
-   }
    buildFeatures {
       compose = true
    }
    composeOptions {
-      kotlinCompilerExtensionVersion = "1.5.3"
+      kotlinCompilerExtensionVersion = "1.5.14"
    }
    packaging {
       resources {
+
          excludes += "/META-INF/{AL2.0,LGPL2.1}"
+         excludes += "/META-INF/LICENSE.md"
+         excludes += "/META-INF/LICENSE-notice.md"
       }
    }
 }
 
 dependencies {
 
-   // https://developer.android.com/jetpack/androidx/releases/activity
-   val activityCompose = "1.8.1"
-   implementation("androidx.activity:activity-compose:$activityCompose")
-
+   // Kotlin
    // https://developer.android.com/jetpack/androidx/releases/core
-   val core = "1.12.0"
-   implementation("androidx.core:core-ktx:$core")
-
-   // A BOM is a Maven module that declares a set of libraries with their versions.
-   // It will greatly simplify the way you define Compose library versions in your
-   // Gradle dependencies block.
-   // https://developer.android.com/jetpack/compose/bom/bom-mapping
-   val compose = "1.5.4"
-   implementation(platform("androidx.compose:compose-bom:2023.10.01"))
-   implementation("androidx.compose.ui:ui")
-   implementation("androidx.compose.ui:ui-graphics")
-   implementation("androidx.compose.ui:ui-tooling-preview")
-   val material3 = "1.1.2"
-   implementation("androidx.compose.material3:material3:$material3")
-   implementation("androidx.compose.material:material-icons-extended:$compose")
-
-   // Lifecycle,
-   // https://developer.android.com/jetpack/androidx/releases/lifecycle
-   val lifecycleVersion = "2.6.2"
-   // val archVersion = "2.2.0"
-   // ViewModel
-   implementation("androidx.lifecycle:lifecycle-viewmodel-ktx:$lifecycleVersion")
-   // ViewModel utilities for Compose
-   implementation("androidx.lifecycle:lifecycle-viewmodel-compose:$lifecycleVersion")
-   // LiveData
-   implementation("androidx.lifecycle:lifecycle-livedata-ktx:$lifecycleVersion")
-   // Livecycle Utilities for Compose
-   implementation("androidx.lifecycle:lifecycle-runtime-compose:$lifecycleVersion")
-   // Saved state Module for ViewModel
-   implementation("androidx.lifecycle:lifecycle-viewmodel-savedstate:$lifecycleVersion")
-
-   // Navigation
-   // https://developer.android.com/jetpack/androidx/releases/navigation
-   val navigationVersion = "2.7.5"
-   implementation( "androidx.navigation:navigation-ui-ktx:$navigationVersion")
-   implementation("androidx.navigation:navigation-compose:$navigationVersion")
-
-   // Coroutines
+   implementation(libs.androidx.core.ktx)
+   // Kotlin Coroutines
    // https://kotlinlang.org/docs/releases.html
-   val kotlinCoroutines = "1.7.3"
-   implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinCoroutines")
-   implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-android:$kotlinCoroutines")
+   implementation (libs.kotlinx.coroutines.core)
+   implementation (libs.kotlinx.coroutines.android)
 
-   // Room Database
-   // https://developer.android.com/jetpack/androidx/releases/room
-   val roomVersion = "2.6.0"
-   implementation("androidx.room:room-runtime:$roomVersion")
-   implementation("androidx.room:room-ktx:$roomVersion")
-// kapt("androidx.room:room-compiler:$roomVersion")
-   ksp("androidx.room:room-compiler:$roomVersion")
+   // Ui Activity
+   // https://developer.android.com/jetpack/androidx/releases/activity
+   implementation(libs.androidx.activity.compose)
+   // Ui Compose
+   // https://developer.android.com/jetpack/compose/bom/bom-mapping
+   implementation(platform(libs.androidx.compose.bom))
+   implementation(libs.androidx.compose.ui)
+   implementation(libs.androidx.compose.ui.graphics)
+   implementation(libs.androidx.compose.ui.tooling.preview)
+   implementation(libs.androidx.compose.material3)
+   implementation(libs.material.icons.extended)
 
-   // Dagger, Hilt
-   // https://developer.android.com/training/dependency-injection/hilt-android
-   // https://dagger.dev/hilt/
-   // https://developer.android.com/jetpack/androidx/releases/hilt
-   val hiltAndroidVersion = "2.48.1"
-   val hiltVersion = "1.1.0"
-   implementation ("com.google.dagger:hilt-android:$hiltAndroidVersion")
-   ksp("com.google.dagger:hilt-compiler:$hiltAndroidVersion")
-   implementation ("androidx.hilt:hilt-navigation-compose:$hiltVersion")
-   ksp            ("androidx.hilt:hilt-compiler:$hiltVersion")
+   // Ui Lifecycle
+   // https://developer.android.com/jetpack/androidx/releases/lifecycle
+   // val archVersion = "2.2.0"
+   implementation(libs.androidx.lifecycle.viewmodel.ktx)
+   // ViewModel utilities for Compose
+   implementation(libs.androidx.lifecycle.viewmodel.compose)
+   implementation(libs.androidx.lifecycle.runtime.ktx)
+   // Lifecycle utilities for Compose
+   implementation (libs.androidx.lifecycle.runtime.compose)
 
+   // Ui Navigation
+   // https://developer.android.com/jetpack/androidx/releases/navigation
+   implementation(libs.androidx.navigation.ui.ktx)
+   implementation(libs.androidx.navigation.compose)
+   // Jetpack Compose Integration
+   implementation(libs.androidx.navigation.compose)
 
    // Image loading
    // https://coil-kt.github.io/coil/
-   val coilComposeVersion = "2.5.0"
-   implementation("io.coil-kt:coil-compose:$coilComposeVersion")
+   implementation(libs.coil.compose)
+
+   // Koin
+   // https://insert-koin.io/docs/3.2.0/getting-started/android/
+   implementation(platform(libs.koin.bom))
+   implementation(libs.koin.android)
+   implementation(libs.koin.androidx.compose)
+   // Java Compatibility
+   implementation (libs.koin.android.compat)
+
+   // Ktor/Kotlin JSON Serializer
+   implementation(libs.kotlinx.serialization.json)
+
+   // Room Database
+   implementation(libs.androidx.room.runtime)
+   implementation(libs.androidx.room.ktx)
+   ksp(libs.androidx.room.compiler)
 
    // TESTS -----------------------
-   testImplementation("junit:junit:4.13.2")
+   testImplementation(libs.junit)
+   testImplementation(libs.koin.test)
+   // Koin for JUnit 4 / 5
+   testImplementation(libs.koin.test.junit4)
+   testImplementation(libs.koin.test.junit5)
 
    // ANDROID TESTS ---------------
    // https://developer.android.com/jetpack/androidx/releases/test
-   val androidTestCore = "1.5.0"
    // To use the androidx.test.core APIs
-   androidTestImplementation("androidx.test:core:$androidTestCore")
-   androidTestImplementation("androidx.test:core-ktx:$androidTestCore")
-   val espresso = "3.5.1"
-   androidTestImplementation("androidx.test.espresso:espresso-core:$espresso")
-   val extJunit = "1.1.5"
-   androidTestImplementation("androidx.test.ext:junit:$extJunit")
-   androidTestImplementation("androidx.test.ext:junit-ktx:$extJunit")
-   val truth = "1.5.0"
-   androidTestImplementation("androidx.test.ext:truth:$truth")
-   val runner = "1.5.2"
-   androidTestImplementation("androidx.test:runner:$runner")
-   // Assertions
-   // androidTestImplementation ("com.google.truth:truth:1.1.5")
+   androidTestImplementation(libs.androidx.core)
+   androidTestImplementation(libs.core.ktx)
+
+   // To use the androidx.test.espresso
+   androidTestImplementation(libs.androidx.espresso.core)
+
+   // To use the JUnit Extension APIs
+   androidTestImplementation(libs.androidx.junit)
+   androidTestImplementation(libs.androidx.junit.ktx)
+
+   // To use the Truth Extension APIs
+   androidTestImplementation(libs.androidx.truth)
+
+   // To use the androidx.test.runner APIs
+   androidTestImplementation(libs.androidx.runner)
 
    // To use Compose Testing
-   androidTestImplementation(platform("androidx.compose:compose-bom:2023.10.01"))
-   androidTestImplementation("androidx.compose.ui:ui-test-junit4")
-   debugImplementation("androidx.compose.ui:ui-tooling")
-   val uiTestManifest = "1.5.4"
-   debugImplementation("androidx.compose.ui:ui-test-manifest:$uiTestManifest")
+   androidTestImplementation(platform(libs.androidx.compose.bom))
+   androidTestImplementation(libs.androidx.ui.test.junit4)
+   // testing navigation
+   androidTestImplementation(libs.androidx.navigation.testing)
+   // testing coroutines
+   androidTestImplementation(libs.kotlinx.coroutines.test)
 
-   androidTestImplementation("com.google.dagger:hilt-android-testing:$hiltAndroidVersion")
-   kspAndroidTest           ("com.google.dagger:hilt-compiler:$hiltAndroidVersion")
-   androidTestImplementation("androidx.hilt:hilt-navigation-compose:$hiltVersion")
-   kspAndroidTest           ("androidx.hilt:hilt-compiler:$hiltVersion")
-   //androidTestImplementation ("com.squareup.okhttp3:mockwebserver:5.0.0-alpha.11")
-   //androidTestImplementation ("io.mockk:mockk-android:1.13.8")
+   // Koin Test features
+   androidTestImplementation(libs.koin.test)
+   // Koin for JUnit 4/5
+   androidTestImplementation(libs.koin.test.junit4)
+   androidTestImplementation(libs.koin.test.junit5)
 
-   //androidTestImplementation ("org.mockito.kotlin:mockito-kotlin:5.1.0")
-   androidTestImplementation("androidx.navigation:navigation-testing:$navigationVersion")
-   androidTestImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:$kotlinCoroutines")
+   // Room Testing
+   androidTestImplementation (libs.androidx.room.testing)
+
+   debugImplementation(libs.androidx.ui.tooling)
+   debugImplementation(libs.androidx.ui.test.manifest)
+
 }

@@ -1,286 +1,235 @@
 package de.rogallab.mobile.ui.people
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
-import androidx.lifecycle.ViewModel
+import android.util.Patterns
 import androidx.lifecycle.viewModelScope
-import dagger.hilt.android.lifecycle.HiltViewModel
-import de.rogallab.mobile.data.seed.Seed
 import de.rogallab.mobile.domain.IPeopleRepository
-import de.rogallab.mobile.domain.IPeopleUseCases
-import de.rogallab.mobile.domain.UiState
+import de.rogallab.mobile.domain.ResultData
 import de.rogallab.mobile.domain.entities.Person
-import de.rogallab.mobile.domain.mapping.toPerson
-import de.rogallab.mobile.domain.mapping.toPersonDto
-import de.rogallab.mobile.domain.utilities.UUIDEmpty
+import de.rogallab.mobile.domain.utilities.as8
 import de.rogallab.mobile.domain.utilities.logDebug
 import de.rogallab.mobile.domain.utilities.logError
+import de.rogallab.mobile.ui.base.BaseViewModel
+import de.rogallab.mobile.ui.errors.ErrorParams
+import de.rogallab.mobile.ui.errors.ErrorResources
+import de.rogallab.mobile.ui.navigation.NavEvent
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.CoroutineExceptionHandler
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.async
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.util.UUID
-import javax.inject.Inject
 
-@HiltViewModel
-class PeopleViewModel @Inject constructor(
-   private val _useCases: IPeopleUseCases,
+class PeopleViewModel(
    private val _repository: IPeopleRepository,
-   private val _seed: Seed,
+   private val _errorResources: ErrorResources,
    private val _dispatcher: CoroutineDispatcher
-) : ViewModel() {
-
-   private var _id: UUID = UUID.randomUUID()
-
-   // State = Observables (DataBinding)
-   private var _firstName: String by mutableStateOf(value = "")
-   val firstName
-      get() = _firstName
-   fun onFirstNameChange(value: String) {
-      if(value != _firstName )  _firstName = value }
-
-   private var _lastName: String by mutableStateOf(value = "")
-   val lastName
-      get() = _lastName
-   fun onLastNameChange(value: String) {
-      if(value != _lastName )  _lastName = value
-   }
-
-   private var _email: String? by mutableStateOf(value = null)
-   val email
-      get() = _email
-   fun onEmailChange(value: String) {
-      if(value != _email )  _email = value
-   }
-
-   private var _phone: String? by mutableStateOf(value = null)
-   val phone
-      get() = _phone
-   fun onPhoneChange(value: String) {
-      if(value != _phone )  _phone = value
-   }
-
-   private var _imagePath: String? by mutableStateOf(value = null)
-   val imagePath
-      get() = _imagePath
-   fun onImagePathChange(value: String?) {
-      if(value != _imagePath )  _imagePath = value
-   }
-
-   // error handling
-   fun onErrorAction() {
-      logDebug(tag, "onErrorAction()")
-      // toDo
-   }
-
-   // Coroutine ExceptionHandler
-   private val _exceptionHandler = CoroutineExceptionHandler { _, exception ->
-      exception.localizedMessage?.let {
-         logError(tag, it)
-         _uiStateFlow.value = UiState.Error(it, true)
-      } ?: run {
-         exception.stackTrace.forEach {
-            logError(tag, it.toString())
-         }
-      }
-   }
-   // Coroutine Context
-   private val _coroutineContext = SupervisorJob() + _dispatcher + _exceptionHandler
-   // Coroutine Scope
-   private val _coroutineScope = CoroutineScope(_coroutineContext)
-
-
-   override fun onCleared() {
-      // cancel all coroutines, when lifecycle of the viewmodel ends
-      logDebug(tag,"Cancel all child coroutines")
-      _coroutineContext.cancelChildren()
-      _coroutineContext.cancel()
-   }
-
-   // mutableStateList with observer
-   // var snapShotPeople: SnapshotStateList<Person> = mutableStateListOf<Person>()
+) : BaseViewModel(_dispatcher, TAG) {
+   // to undo: store the person that was removed
+   private var removedPerson: Person? = null
 
    init {
-      _coroutineScope.launch() {
-         _seed.initDatabase()
-      }
+      logDebug(TAG, "init")
+      //_repository.readDataStore()
    }
 
-   // StateFlow for Input&Detail Screens
-   private var _uiStateFlow: MutableStateFlow<UiState<Person>> =
-      MutableStateFlow(value = UiState.Empty)
-   val uiStateFlow: StateFlow<UiState<Person>>
-      get() = _uiStateFlow
-   fun onUiStateFlowChange(uiState: UiState<Person>) {
-      _uiStateFlow.value = uiState
-      if(uiState is UiState.Error) {
-         logError(tag,uiState.message)
-      }
-   }
-   // StateFlow for List Screens
-   val uiStateListFlow: StateFlow<UiState<List<Person>>> = flow {
-      _useCases.readAll().collect { uiState ->
-         emit(uiState)
-      }
-   }.stateIn(
-      viewModelScope,
-      SharingStarted.WhileSubscribed(1_000),
-      UiState.Empty
-   )
-
-   fun readById(id: UUID) {
-      try {
-         _coroutineScope.launch {
-            val personDto = viewModelScope.async(_dispatcher+_exceptionHandler) {
-               return@async _repository.findById(id)
-            }.await()
-            personDto?.let{
-               val person = it.toPerson()
-               // person values are set as observable states in the viewmodel
-               setStateFromPerson(person)
-               logDebug(tag, "findById() ${person.asString()}")
-               _uiStateFlow.value = UiState.Empty  // no return neeeded
-            } ?: run {
-               throw Exception("Person with given id not found")
-            }
-         }
-      }
-      catch (e: Exception) {
-         val message = e.localizedMessage ?: e.stackTraceToString()
-         logError(tag,message)
-         _uiStateFlow.value =  UiState.Error(message)
-      }
-   }
-
-   private fun waitUntilJobIsCompleted(job: Job?, text: String = ""): Boolean {
-      job?.let{
-         _coroutineScope.launch {
-            it.join()
-            logDebug(tag, "$text isActive:${it.isActive} " +
-               "isCompleted:${it.isCompleted} isCanceled:${it.isCancelled}")
-         }
-      }
-      logDebug(tag,"return isCompleted ${job?.isCompleted}")
-      return job?.isCompleted ?: false
-   }
-
-   fun add() {
-      try {
-         val personDto = getPersonFromState().toPersonDto()
-         _coroutineScope.launch {
-            val result = _coroutineScope.async {
-               _repository.add(personDto)
-            }.await()
-            logDebug(tag, "after await()")
-            if (result) {
-               logDebug(tag, "add() ${personDto.asString()}")
-               _uiStateFlow.value = UiState.Empty
-            } else {
-               val message = "Error in add()"
-               logError(tag, message)
-               _uiStateFlow.value = UiState.Error(message,false,true)
-            }
-         }
-      } catch (e: Exception) {
-         val message = e.localizedMessage ?: e.stackTraceToString()
-         logError(tag, message)
-         _uiStateFlow.value = UiState.Error(message, false, true)
-      }
-   }
-
-   fun update(id:UUID) {
-      try {
-         val upPersonDto = getPersonFromState(id).toPersonDto()
-         _coroutineScope.launch {
-            val result = _coroutineScope.async {
-               _repository.update(upPersonDto)
-            }.await()
-            if(result) {
-               logDebug(tag, "update() ${upPersonDto.asString()}")
-               _uiStateFlow.value = UiState.Empty
-            } else {
-               val message = "Error in update()"
-               logError(tag, message)
-               _uiStateFlow.value = UiState.Error(message, false, true)
-            }
-         }
-      } catch (e: Exception) {
-         val message = e.localizedMessage ?: e.stackTraceToString()
-         logError(tag,message)
-         _uiStateFlow.value =  UiState.Error(message, false, true)
-      }
-   }
-
-   fun remove(id:UUID) {
-      try {
-         _coroutineScope.launch {
-            val personDto = _coroutineScope.async {
-               return@async _repository.findById(id)
-            }.await()
-            personDto?.let{
-               val result = _coroutineScope.async {
-                  _repository.remove(personDto)
-               }.await()
-               if(result) {
-                  logDebug(tag, "removed() ${personDto.asString()}")
-                  _uiStateFlow.value = UiState.Success(null)
-               } else {
-                  val message = "Error in remove()"
-                  logError(tag, message)
-                  _uiStateFlow.value = UiState.Error(message, false, true)
+   // Data Binding PeopleListScreen <=> PersonViewModel
+   private val _peopleUiStateFlow: MutableStateFlow<PeopleUiState> = MutableStateFlow(PeopleUiState())
+   val peopleUiStateFlow: StateFlow<PeopleUiState> = _peopleUiStateFlow.asStateFlow()
+   // read all people from repository
+   fun fetchPeople() {
+      viewModelScope.launch(_dispatcher) {
+         _repository.getAll().collect { resultData: ResultData<List<Person>> ->
+            when (resultData) {
+               is ResultData.Success -> {
+                  _peopleUiStateFlow.update { it: PeopleUiState ->
+                     it.copy(people = resultData.data.toList())
+                  }
                }
-            } ?: run {
-               throw Exception("remove(): Person with given id not found")
+               is ResultData.Failure -> {
+                  val message = "Failed to read people ${resultData.throwable.localizedMessage}"
+                  logError(TAG, message)
+               }
+               else -> Unit
             }
          }
-      } catch (e: Exception) {
-         val message = e.localizedMessage ?: e.stackTraceToString()
-         logError(tag,message)
-         _uiStateFlow.value =  UiState.Error(message, false, true)
+      }
+   }
+   // Data Binding PersonScreen <=> PersonViewModel
+   private val _personUiStateFlow: MutableStateFlow<PersonUiState> = MutableStateFlow(PersonUiState())
+   val personUiStateFlow: StateFlow<PersonUiState> = _personUiStateFlow.asStateFlow()
+
+   fun getPersonId(): String = _personUiStateFlow.value.person.id
+
+   fun onFirstNameChange(firstName: String) {
+      if (firstName == _personUiStateFlow.value.person.firstName) return
+      _personUiStateFlow.update { it: PersonUiState ->
+         it.copy(person = it.person.copy(firstName = firstName))
+      }
+   }
+   fun onLastNameChange(lastName: String) {
+      if (lastName == _personUiStateFlow.value.person.lastName) return
+      _personUiStateFlow.update { it: PersonUiState ->
+         it.copy(person = it.person.copy(lastName = lastName))
+      }
+   }
+   fun onEmailChange(email: String?) {
+      if (email == null || email == _personUiStateFlow.value.person.email) return
+      _personUiStateFlow.update { it: PersonUiState ->
+         it.copy(person = it.person.copy(email = email))
+      }
+   }
+   fun onPhoneChange(phone: String?) {
+      if (phone == null || phone == _personUiStateFlow.value.person.phone) return
+      _personUiStateFlow.update { it: PersonUiState ->
+         it.copy(person = it.person.copy(phone = phone))
+      }
+   }
+   fun onImagePathChange(imagePath: String?) {
+      if (imagePath == null || imagePath == _personUiStateFlow.value.person.imagePath) return
+      _personUiStateFlow.update { it: PersonUiState ->
+         it.copy(person = it.person.copy(imagePath = imagePath))
       }
    }
 
-
-   fun getPersonFromState(id:UUID? = null): Person {
-      val person = id?.let {
-         return@let Person(_firstName, _lastName, _email, _phone, _imagePath, id)
-      } ?: run {
-         return@run Person(_firstName, _lastName, _email, _phone, _imagePath, _id)
+   fun fetchPerson(personId: String) {
+      logDebug(TAG, "fetchPersonById: $personId")
+      viewModelScope.launch {
+         when (val resultData = _repository.findById(personId)) {
+            is ResultData.Success -> {
+               _personUiStateFlow.update { it: PersonUiState ->
+                  it.copy(person = resultData.data ?: Person())
+               }
+            }
+            is ResultData.Failure -> {
+               onErrorEvent(ErrorParams(throwable = resultData.throwable, navEvent = null))
+            }
+            else -> Unit
+         }
       }
-      return person
    }
 
-   fun setStateFromPerson(person: Person?) {
-      _firstName = person?.firstName ?: ""
-      _lastName  = person?.lastName ?: ""
-      _email     = person?.email
-      _phone     = person?.phone
-      _imagePath = person?.imagePath
-      _id        = person?.id ?: UUIDEmpty
+   fun createPerson() {
+      val person = _personUiStateFlow.value.person
+      logDebug(TAG, "createPerson ${person.id.as8()}")
+      viewModelScope.launch {
+         when (val resultData = _repository.create(person)) {
+            is ResultData.Success -> Unit
+            is ResultData.Failure -> {
+               onErrorEvent(ErrorParams(throwable = resultData.throwable, navEvent = null))
+            }
+            else -> Unit
+         }
+      }
+   }
+
+   fun updatePerson() {
+      val person = _personUiStateFlow.value.person
+      logDebug(TAG, "updatePerson ${person.id.as8()}")
+      viewModelScope.launch {
+         when (val resultData = _repository.update(person)) {
+            is ResultData.Success -> fetchPeople()
+            is ResultData.Failure -> {
+               onErrorEvent(ErrorParams(throwable = resultData.throwable, navEvent = null))
+            }
+            else -> Unit
+         }
+      }
+   }
+
+   fun removePerson(person: Person) {
+      logDebug(TAG, "removePerson: ${person.id.as8()}")
+      viewModelScope.launch {
+         when (val resultData = _repository.remove(person)) {
+            is ResultData.Success -> {
+               removedPerson = person
+               fetchPeople()
+            }
+            is ResultData.Failure -> {
+               onErrorEvent(ErrorParams(throwable = resultData.throwable, navEvent = null))
+            }
+            else -> Unit
+         }
+      }
+   }
+
+   fun undoRemovePerson() {
+      removedPerson?.let { person ->
+         viewModelScope.launch {
+            when (val resultData = _repository.create(person)) {
+               is ResultData.Success -> {
+                  removedPerson = null
+                  fetchPeople()
+               }
+               is ResultData.Failure -> {
+                  onErrorEvent(ErrorParams(throwable = resultData.throwable, navEvent = null))
+               }
+               else -> Unit
+            }
+         }
+      }
    }
 
    fun clearState() {
-      logDebug(tag, "clearState")
-      _firstName = ""
-      _lastName  = ""
-      _email     = null
-      _phone     = null
-      _imagePath = null
-      _id        = UUID.randomUUID()
+      _personUiStateFlow.update { it.copy(person = Person()) }
+   }
+
+   fun validateName(name: String): Pair<Boolean, String> =
+      if (name.isEmpty() || name.length < _errorResources.charMin)
+         Pair(true, _errorResources.nameTooShort)
+      else if (name.length > _errorResources.charMax)
+         Pair(true, _errorResources.nameTooLong)
+      else
+         Pair(false, "")
+
+   fun validateEmail(email: String?): Pair<Boolean, String> {
+      email?.let {
+         when (android.util.Patterns.EMAIL_ADDRESS.matcher(it).matches()) {
+            true -> return Pair(false, "") // email ok
+            false -> return Pair(true, _errorResources.emailInValid)
+         }
+      } ?: return Pair(false, "")
+   }
+
+   fun validatePhone(phone: String?): Pair<Boolean, String> {
+      phone?.let {
+         when (android.util.Patterns.PHONE.matcher(it).matches()) {
+            true -> return Pair(false, "")   // email ok
+            false -> return Pair(true, _errorResources.phoneInValid)
+         }
+      } ?: return Pair(false, "")
+   }
+
+   fun validate(
+      isInput: Boolean
+   ) {
+      // input is ok        -> add and navigate up
+      // detail is ok       -> update and navigate up
+      // is the is an error -> show error and stay on screen
+      val charMin = _errorResources.charMin
+      val charMax = _errorResources.charMax
+      val person = _personUiStateFlow.value.person
+      // firstName or lastName too short
+      if (person.firstName.isEmpty() || person.firstName.length < charMin) {
+         onErrorEvent(ErrorParams(message = _errorResources.nameTooShort, navEvent = null))
+      } else if (person.firstName.length > charMax) {
+         onErrorEvent(ErrorParams(message = _errorResources.nameTooLong, navEvent = null))
+      } else if (person.lastName.isEmpty() || person.lastName.length < charMin) {
+         onErrorEvent(ErrorParams(message = _errorResources.nameTooShort, navEvent = null))
+      } else if (person.lastName.length > charMax) {
+         onErrorEvent(ErrorParams(message = _errorResources.nameTooLong, navEvent = null))
+      } else if (person.email != null &&
+         !Patterns.EMAIL_ADDRESS.matcher(person.email).matches()) {
+         onErrorEvent(ErrorParams(message = _errorResources.emailInValid, navEvent = null))
+      } else if (person.phone != null &&
+         !Patterns.PHONE.matcher(person.phone).matches()) {
+         onErrorEvent(ErrorParams(message = _errorResources.phoneInValid, navEvent = null))
+      } else {
+         if (isInput) this.createPerson()
+         else this.updatePerson()
+      }
    }
 
    companion object {
-      const val tag = "ok>PeopleViewModel    ."
+      private const val TAG = "[PeopleViewModel]"
    }
 }
