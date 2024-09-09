@@ -15,5 +15,5 @@ dependencyResolutionManagement {
    }
 }
 
-rootProject.name = "A6_01_RoomPeople"
+rootProject.name = "A7_01_RoomPeople"
 include(":app")
