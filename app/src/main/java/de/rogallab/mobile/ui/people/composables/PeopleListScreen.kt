@@ -1,0 +1,172 @@
+package de.rogallab.mobile.ui.people.composables
+
+import android.app.Activity
+import androidx.activity.compose.LocalActivity
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.dp
+import de.rogallab.mobile.R
+import de.rogallab.mobile.domain.utilities.logComp
+import de.rogallab.mobile.domain.utilities.logDebug
+import de.rogallab.mobile.domain.utilities.logVerbose
+import de.rogallab.mobile.ui.base.composables.CollectBy
+import de.rogallab.mobile.ui.base.composables.ScrollToItemIfNotVisible
+import de.rogallab.mobile.ui.errors.ErrorHandler
+import de.rogallab.mobile.ui.errors.ErrorState
+import de.rogallab.mobile.ui.people.PeopleIntent
+import de.rogallab.mobile.ui.people.PeopleUiState
+import de.rogallab.mobile.ui.people.PersonIntent
+import de.rogallab.mobile.ui.people.PersonViewModel
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun PeopleListScreen(
+   viewModel: PersonViewModel,
+   onNavigatePersonInput: () -> Unit = {},
+   onNavigatePersonDetail: (String) -> Unit = {}
+) {
+   val tag = "<-PeopleListScreen"
+   val nComp = remember { mutableIntStateOf(1) }
+   SideEffect { logComp(tag, "Composition #${nComp.value++}") }
+
+   // observe the peopleUiStateFlow in the ViewModel
+   val peopleUiState: PeopleUiState = CollectBy(viewModel.peopleUiStateFlow, tag)
+
+   LaunchedEffect(Unit) {
+      logDebug(tag, "Fetching people")
+      viewModel.handlePeopleIntent(PeopleIntent.Fetch)
+   }
+
+   // Scroll to the restored item only if it's not already visible
+   val listState = rememberLazyListState()
+   ScrollToItemIfNotVisible(
+      listState = listState,
+      targetKey = peopleUiState.restoredPersonId,
+      items = peopleUiState.people,
+      keyOf = { it.id },          // extract the ID from a Person
+      // Mark the restoration as consumed
+      acknowledge = { viewModel.handlePersonIntent(PersonIntent.Restored) },
+      animate = true,
+      scrollOffset = 0,
+      fullyVisible = false
+   )
+
+   val snackbarHostState = remember { SnackbarHostState() }
+   Scaffold(
+      contentColor = MaterialTheme.colorScheme.onBackground,
+      contentWindowInsets = WindowInsets.safeDrawing,
+      modifier = Modifier.fillMaxSize(),
+      topBar = {
+         TopAppBar(
+            title = { Text(stringResource(R.string.peopleList)) },
+            navigationIcon = {
+               val activity: Activity? = LocalActivity.current
+               IconButton(onClick = {
+                  logDebug(tag, "Menu navigation clicked -> Exit App")
+                  activity?.finish()
+               }) {
+                  Icon(
+                     imageVector = Icons.Default.Menu,
+                     contentDescription = "Exit App"
+                  )
+               }
+            },
+         )
+      },
+      floatingActionButton = {
+         FloatingActionButton(
+            containerColor = MaterialTheme.colorScheme.tertiary,
+            onClick = {
+               logDebug(tag, "FAB clicked")
+               viewModel.handlePersonIntent(PersonIntent.Clear)
+               onNavigatePersonInput()
+            }
+         ) {
+            Icon(Icons.Default.Add, "Add a contact")
+         }
+      },
+      snackbarHost = {
+         SnackbarHost(hostState = snackbarHostState) { data ->
+            Snackbar(
+               snackbarData = data,
+               actionOnNewLine = true
+            )
+         }
+      }
+   ) { innerPadding ->
+
+      if (peopleUiState.isLoading) {
+         SideEffect { logVerbose(tag, "Loading indicator") }
+         Box(
+            modifier = Modifier
+               .fillMaxSize()
+               .padding(innerPadding),
+            contentAlignment = Alignment.Center
+         ) {
+            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+         }
+      } else {
+         SideEffect{ logVerbose(tag, "Show Lazy Column (visual items)")}
+
+         val undoMessage = stringResource(R.string.undoDeletePerson)
+         val undoActionLabel = stringResource(R.string.undoAnswer)
+         val people = peopleUiState.people
+
+         LazyColumn(
+            state = listState,
+            modifier = Modifier
+               .padding(innerPadding)
+               .padding(horizontal = 20.dp)
+               .fillMaxSize()
+         ) {
+            items(
+               items = people,
+               key = { person -> person.id }
+            ) { person ->
+               SideEffect {
+                  logVerbose(tag, "Lazy Column, size:${people.size} - Person: ${person.firstName}")}
+
+               SwipePersonListItemWithUndo(
+                  person = person,
+                  onNavigate = { onNavigatePersonDetail(person.id) },
+                  onRemove = { viewModel.handlePersonIntent(PersonIntent.RemoveUndo(person)) },
+                  onUndo = {
+                     val errorState = ErrorState(
+                        message = undoMessage,
+                        actionLabel = undoActionLabel,
+                        onActionPerform = { viewModel.handlePersonIntent(PersonIntent.Undo) },
+                        withDismissAction = false,
+                        duration = SnackbarDuration.Long
+                     )
+                     viewModel.handlePersonIntent(PersonIntent.UndoEvent(errorState))
+                  }
+               ) {
+                  PersonCard(
+                     firstName = person.firstName,
+                     lastName = person.lastName,
+                     email = person.email,
+                     phone = person.phone,
+                     imagePath = person.imagePath
+                  )
+               }
+            }
+         }
+      }
+   }
+
+   ErrorHandler(
+      viewModel = viewModel,
+      snackbarHostState = snackbarHostState,
+      onCleanUp = { viewModel.cleanUp()}
+   )
+}

@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+          xmlns:tools="http://schemas.android.com/tools">
+
+  <!--Use internet-->
+  <uses-permission android:name="android.permission.INTERNET" />
+
+  <!--Check network state -->
+  <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+  <!--Check/Change Wifi (WLAN) state -->
+  <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+  <uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+
+
+  <!--Read/Write Mediastore-->
+  <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+  <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
+  <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+
+  <!--GPS position, Geotagging -->
+  <uses-feature android:name="android.hardware.location.gps" android:required="false" />
+  <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+  <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+
+  <!-- Camera, Video&Audio -->
+  <uses-feature android:name="android.hardware.camera" android:required="false" />
+  <uses-feature android:name="android.hardware.microphone" android:required="false" />
+  <uses-permission android:name="android.permission.CAMERA" />
+  <uses-permission android:name="android.permission.RECORD_AUDIO" />
+  <!-- Optional: EXIF-GPS photos -->
+  <uses-permission android:name="android.permission.ACCESS_MEDIA_LOCATION" />
+
+
+  <!-- Foreground Service (Android 14+) -->
+  <!-- Is a service that keeps running even when your app is in the background, but the user -->
+  <!-- must be clearly aware of it. So, the system requires you to show a persistent notification. -->
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA"/>
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE"/>
+  <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION"/>
+
+
+  <application
+    android:name=".MainApplication"
+    android:allowBackup="true"
+    android:dataExtractionRules="@xml/data_extraction_rules"
+    android:enableOnBackInvokedCallback="true"
+    android:fullBackupContent="@xml/backup_rules"
+    android:icon="@mipmap/ic_launcher"
+    android:label="@string/app_name"
+    android:roundIcon="@mipmap/ic_launcher_round"
+    android:supportsRtl="true"
+    tools:targetApi="36">
+    <activity
+      android:name=".ui.MainActivity"
+      android:exported="true"
+      android:windowSoftInputMode="adjustResize"
+      android:theme="@style/Theme.A5_01_ScaffoldNavigation">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN" />
+
+        <category android:name="android.intent.category.LAUNCHER" />
+      </intent-filter>
+    </activity>
+
+    <provider
+      android:name="androidx.core.content.FileProvider"
+      android:authorities="de.rogallab.mobile.provider"
+      android:exported="false"
+      android:grantUriPermissions="true">
+      <meta-data
+        android:name="android.support.FILE_PROVIDER_PATHS"
+        android:resource="@xml/file_paths" />
+    </provider>
+
+  </application>
+
+</manifest>
