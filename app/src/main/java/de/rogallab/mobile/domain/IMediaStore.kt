@@ -1,6 +1,5 @@
 package de.rogallab.mobile.domain
 
-import android.content.Context
 import android.graphics.Bitmap
 import android.net.Uri
 

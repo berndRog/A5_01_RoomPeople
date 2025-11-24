@@ -2,8 +2,6 @@ package de.rogallab.mobile.domain.utilities
 
 import java.util.Locale
 import java.util.UUID
-import kotlin.uuid.ExperimentalUuidApi
-import kotlin.uuid.Uuid
 
 /*
 // UUID is handled as String

@@ -70,7 +70,7 @@ class Seed(
       }
 
       // convert the drawables into image files
-      if(!_isTest) runBlocking{   createImages()  }
+      if(!_isTest)   createImages()
    }
 
    private suspend fun createImages() {

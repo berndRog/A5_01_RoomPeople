@@ -2,7 +2,6 @@ package de.rogallab.mobile.ui.people
 
 import androidx.compose.material3.SnackbarDuration
 import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.viewmodel.compose.viewModel
 import de.rogallab.mobile.domain.IPeopleUcFetchSorted
 import de.rogallab.mobile.domain.IPersonUseCases
 import de.rogallab.mobile.domain.entities.Person
@@ -12,9 +11,13 @@ import de.rogallab.mobile.ui.base.BaseViewModel
 import de.rogallab.mobile.ui.base.updateState
 import de.rogallab.mobile.ui.navigation.INavHandler
 import de.rogallab.mobile.ui.navigation.PeopleList
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
-import kotlin.onSuccess
 
 class PersonViewModel(
    private val _fetchSorted: IPeopleUcFetchSorted,
@@ -155,7 +158,7 @@ class PersonViewModel(
          item = person,
          currentList = _peopleUiStateFlow.value.people,
          getId = { it.id },
-         onRemovedItem = { _removedPerson = it as? Person },
+         onRemovedItem = { _removedPerson = it },
          onRemovedItemIndex = { _removedPersonIndex = it },
          updateUi = { updatedList -> updateState(_peopleUiStateFlow) { copy(people = updatedList) } },
          persistRemove = { _personUc.remove(it) },

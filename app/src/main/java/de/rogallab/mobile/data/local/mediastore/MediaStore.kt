@@ -21,6 +21,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.UUID
+import androidx.core.graphics.createBitmap
 
 class MediaStore(
    private val _context: Context,
@@ -179,7 +180,7 @@ class MediaStore(
          // Convert drawable to bitmap
          val width = drawable.intrinsicWidth.takeIf { it > 0 } ?: 1
          val height = drawable.intrinsicHeight.takeIf { it > 0 } ?: 1
-         bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+         bitmap = createBitmap(width, height)
          Canvas(bitmap).also { canvas ->
             drawable.setBounds(0, 0, canvas.width, canvas.height)
             drawable.draw(canvas)
